@@ -1,59 +1,43 @@
-const setupEvents = require('./installers/setupEvents')
- if (setupEvents.handleSquirrelEvent()) {
-    return;
- }
-const electron = require('electron')
-const MixerDesktop = electron.app
-const BrowserWindow = electron.BrowserWindow
-const path = require('path')
-const url = require('url')
+const path = require("path");
+const { app, BrowserWindow } = require("electron");
 
-let mainWindow
+let mainWindow;
 
-function createWindow () {
-  mainWindow = new BrowserWindow({width: 1280, height: 720, titleBarStyle: 'hidden', icon:'./icons/win/icon-app.ico', backgroundColor: '#141828', webPreferences: {
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1280,
+    height: 720,
+    titleBarStyle: "hidden",
+    backgroundColor: "#141828",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"), // Переконайтеся, що preload.js існує
       nodeIntegration: false,
-      preload: '',
-      nativeWindowOpen: true,
-    }})
+      contextIsolation: true,
+    },
+  });
 
-  // Child window open event handler
-  mainWindow.webContents.on('new-window', (event, url, frameName, disposition, options, additionalFeatures) => {
-    event.preventDefault()
-    Object.assign(options, {
-      parent: mainWindow
-    })
-    event.newGuest = new BrowserWindow(options)
-    event.newGuest.setMenu(null)
-  })
-    
-  mainWindow.loadURL('https://mixer.com/users/login')
-  mainWindow.setMenu(null)
-    
-  //mainWindow.webContents.openDevTools()
-    
-  mainWindow.on('closed', function () {
-    mainWindow = null
-  })
+  // Завантаження локального index.html
+  mainWindow
+    .loadFile("index.html")
+    .catch((err) => console.error("Error loading file:", err));
+
+  mainWindow.setMenu(null);
+
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 }
 
-MixerDesktop.on('ready', createWindow)
+app.on("ready", createWindow);
 
-MixerDesktop.on('window-all-closed', function () {
-  if (process.platform !== 'win32') {
-    MixerDesktop.quit()
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
   }
-})
+});
 
-MixerDesktop.on('activate', function () {
+app.on("activate", () => {
   if (mainWindow === null) {
-    createWindow()
+    createWindow();
   }
-})
-
-MixerDesktop.on('closed', function () {
-    mainWindow = null
-    MixerDesktop.quit()
-    return
-    quit ()
-})
+});
